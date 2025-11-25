@@ -114,15 +114,25 @@ def add_missing_major_resorts(df):
     must_include = ['Palisades Tahoe', 'Mammoth Mountain', 'Heavenly', 'Northstar California']
     
     existing_names = df['name'].str.lower().tolist()
-    existing_normalized = [name.replace(' ski area', '').replace(' resort', '').replace(' mountain', '').strip() 
-                          for name in existing_names]
+    
+    # Create a better normalized list for comparison
+    def normalize_name(name):
+        """Normalize resort name for comparison"""
+        return name.lower().replace(' ski area', '').replace(' resort', '').replace(' mountain', '').strip()
+    
+    existing_normalized = [normalize_name(name) for name in df['name'].tolist()]
     
     missing_resorts = []
     
     for resort_name in must_include:
-        # Check if resort is already in the data (by normalized name)
-        resort_normalized = resort_name.lower()
-        if not any(resort_normalized in existing for existing in existing_normalized):
+        # Normalize the resort name for comparison
+        resort_normalized = normalize_name(resort_name)
+        
+        # Check if this resort already exists
+        already_exists = resort_normalized in existing_normalized
+        
+        if not already_exists:
+            logger.info(f"  Checking {resort_name} -> normalized: '{resort_normalized}' (not found in {existing_normalized})")
             # Resort is missing - add it as placeholder
             if resort_name in RESORT_DATA:
                 data = RESORT_DATA[resort_name]
