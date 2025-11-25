@@ -9,7 +9,7 @@ const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXZud2xnIiwiYSI6ImNtaTIzYTFnYzFneG8yaXB4NDg3M3R
 // 2. File → Share → Publish to web
 // 3. Choose "Entire Document" and "Comma-separated values (.csv)"
 // 4. Click Publish and copy the URL
-const DATA_URL = 'YOUR_CALIFORNIA_GOOGLE_SHEET_CSV_URL_HERE';  // UPDATE THIS after creating the California Google Sheet
+const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPDR89F-3N-HKuQDKU8fRdQLpNncVHgm0yeq_DuLhIFNgpPYoul2xH6_joAgOeQRs3IujzHse2H7Y7/pub?output=csv';
 
 // Map configuration
 const MAP_CONFIG = {
