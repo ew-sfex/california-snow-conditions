@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time California ski resort snow conditions and terrain status">
+    <title>California Snow Conditions - Live Map</title>
+    
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet" />
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header>
+            <h1>🏔️ California Snow Conditions</h1>
+            <div class="controls">
+                <!-- Region Toggle -->
+                <div class="region-selector">
+                    <button class="region-btn active" data-region="all">All CA</button>
+                    <button class="region-btn" data-region="tahoe-north">N. Tahoe</button>
+                    <button class="region-btn" data-region="tahoe-south">S. Tahoe</button>
+                    <button class="region-btn" data-region="mammoth">Mammoth</button>
+                    <button class="region-btn" data-region="socal">SoCal</button>
+                </div>
+                <!-- Resort Filter -->
+                <button id="filterOpen" class="filter-btn active">All Resorts</button>
+                <button id="filterClosed" class="filter-btn">Open Only</button>
+                <div class="last-update" id="lastUpdate">Loading...</div>
+            </div>
+        </header>
+
+        <!-- Map Container -->
+        <div id="map"></div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Terrain Open</h3>
+            <div class="legend-scale">
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #D5D8DC; border: 2px solid #BDC1C6;"></span>
+                    <span class="legend-label-full">Closed</span>
+                    <span class="legend-label-short">Closed</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #5398DC;"></span>
+                    <span class="legend-label-full">Early (1-10%)</span>
+                    <span class="legend-label-short">1-10%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #8E7FDB;"></span>
+                    <span class="legend-label-full">Building (10-35%)</span>
+                    <span class="legend-label-short">10-35%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #C67BC4;"></span>
+                    <span class="legend-label-full">Moderate (35-75%)</span>
+                    <span class="legend-label-short">35-75%</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color" style="background: #E74C8D;"></span>
+                    <span class="legend-label-full">Peak (75%+)</span>
+                    <span class="legend-label-short">75%+</span>
+                </div>
+            </div>
+            <div class="legend-size">
+                <h4>Size = Total Trails</h4>
+                <div class="size-examples">
+                    <div class="size-example">
+                        <div class="size-circle" style="width: 12px; height: 12px;"></div>
+                        <span>10</span>
+                    </div>
+                    <div class="size-example">
+                        <div class="size-circle" style="width: 24px; height: 24px;"></div>
+                        <span>150</span>
+                    </div>
+                    <div class="size-example">
+                        <div class="size-circle" style="width: 36px; height: 36px;"></div>
+                        <span>250</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading resort data...</p>
+        </div>
+    </div>
+
+    <!-- Configuration -->
+    <script src="config.js?v=20241116-4"></script>
+    
+    <!-- Map Logic -->
+    <script src="map.js?v=20241116-4"></script>
+</body>
+</html>
+

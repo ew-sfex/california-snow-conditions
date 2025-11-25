@@ -1,0 +1,542 @@
+// California Snow Conditions - Mapbox Map
+// Loads data from Google Sheets and renders interactive resort markers
+
+// Configuration
+mapboxgl.accessToken = MAPBOX_TOKEN;
+
+// California Regions for zoom toggle
+const REGIONS = {
+    'all': {
+        name: 'All California',
+        bounds: [[-124.5, 32.5], [-114.0, 42.0]],
+        padding: {top: 50, bottom: 50, left: 50, right: 50}
+    },
+    'tahoe-north': {
+        name: 'North Lake Tahoe',
+        bounds: [[-120.4, 39.05], [-119.8, 39.45]],
+        padding: {top: 30, bottom: 30, left: 30, right: 30}
+    },
+    'tahoe-south': {
+        name: 'South Lake Tahoe',
+        bounds: [[-120.3, 38.75], [-119.85, 39.05]],
+        padding: {top: 30, bottom: 30, left: 30, right: 30}
+    },
+    'mammoth': {
+        name: 'Mammoth Lakes',
+        bounds: [[-119.25, 37.55], [-118.95, 37.85]],
+        padding: {top: 40, bottom: 40, left: 40, right: 40}
+    },
+    'socal': {
+        name: 'Southern California',
+        bounds: [[-117.75, 34.1], [-116.75, 34.5]],
+        padding: {top: 40, bottom: 40, left: 40, right: 40}
+    }
+};
+
+// State
+let map;
+let resortData = [];
+let markers = [];
+let currentFilter = 'all'; // 'all' or 'open'
+let currentRegion = 'all';
+
+// Initialize map on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    loadData();
+    setupEventListeners();
+    
+    // Auto-refresh data every 5 minutes
+    setInterval(loadData, 5 * 60 * 1000);
+});
+
+function initMap() {
+    // Detect if mobile/narrow screen
+    const isMobile = window.innerWidth < 768;
+    
+    map = new mapboxgl.Map({
+        container: 'map',
+        style: MAP_CONFIG.style,
+        minZoom: MAP_CONFIG.minZoom,
+        maxZoom: MAP_CONFIG.maxZoom,
+        pitch: 0
+    });
+    
+    // On desktop: fit to California bounds
+    // On mobile: will fit to resort data after loading (see renderMarkers)
+    if (!isMobile) {
+        map.fitBounds(MAP_CONFIG.bounds, {
+            padding: MAP_CONFIG.padding
+        });
+    }
+    
+    // Add navigation controls
+    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+    
+    // Add fullscreen control
+    map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+    
+    // Store mobile state for later use
+    map._isMobile = isMobile;
+    
+    // Scale markers based on zoom level
+    map.on('zoom', () => {
+        updateMarkerSizes();
+    });
+}
+
+function setupEventListeners() {
+    // Resort filter buttons
+    document.getElementById('filterOpen').addEventListener('click', () => {
+        setFilter('all');
+    });
+    
+    document.getElementById('filterClosed').addEventListener('click', () => {
+        setFilter('open');
+    });
+    
+    // Region toggle buttons
+    document.querySelectorAll('.region-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const region = btn.dataset.region;
+            setRegion(region);
+        });
+    });
+}
+
+function setFilter(filter) {
+    currentFilter = filter;
+    
+    // Update button states
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (filter === 'all') {
+        document.getElementById('filterOpen').classList.add('active');
+    } else {
+        document.getElementById('filterClosed').classList.add('active');
+    }
+    
+    // Re-render markers with filter
+    renderMarkers();
+}
+
+function setRegion(region) {
+    currentRegion = region;
+    
+    // Update button states
+    document.querySelectorAll('.region-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-region="${region}"]`).classList.add('active');
+    
+    // Zoom to region bounds
+    const regionConfig = REGIONS[region];
+    if (regionConfig) {
+        map.fitBounds(regionConfig.bounds, {
+            padding: regionConfig.padding,
+            duration: 1000
+        });
+    }
+}
+
+async function loadData() {
+    try {
+        console.log('Fetching data from Google Sheets...');
+        
+        const response = await fetch(DATA_URL);
+        const csvText = await response.text();
+        
+        // Parse CSV
+        resortData = parseCSV(csvText);
+        console.log(`Loaded ${resortData.length} resorts`);
+        
+        // Update last update time
+        if (resortData.length > 0) {
+            const lastUpdate = resortData[0]['Last Updated'] || 'Unknown';
+            // Format: "2025-11-16 11:46" → "Nov 16, 11:46am"
+            const formatted = formatTimestamp(lastUpdate);
+            document.getElementById('lastUpdate').textContent = `Updated ${formatted}`;
+        }
+        
+        // Render markers
+        renderMarkers();
+        
+        // Hide loading indicator
+        document.getElementById('loading').classList.add('hidden');
+        
+    } catch (error) {
+        console.error('Error loading data:', error);
+        document.getElementById('loading').innerHTML = 
+            '<p style="color: #D32F2F;">Error loading resort data. Please try again later.</p>';
+    }
+}
+
+function parseCSV(csv) {
+    const lines = csv.trim().split('\n');
+    const headers = lines[0].split(',');
+    
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        const values = parseCSVLine(lines[i]);
+        const resort = {};
+        
+        headers.forEach((header, index) => {
+            resort[header.trim()] = values[index] ? values[index].trim() : '';
+        });
+        
+        data.push(resort);
+    }
+    
+    return data;
+}
+
+function parseCSVLine(line) {
+    // Handle CSV with quoted fields
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    result.push(current);
+    
+    return result;
+}
+
+function renderMarkers() {
+    // Clear existing markers
+    markers.forEach(marker => marker.remove());
+    markers = [];
+    
+    // Filter resorts based on current filter
+    let filteredResorts = resortData;
+    if (currentFilter === 'open') {
+        filteredResorts = resortData.filter(r => r.Status === 'Open');
+    }
+    
+    // Create markers for each resort
+    filteredResorts.forEach(resort => {
+        const lat = parseFloat(resort.Latitude);
+        const lng = parseFloat(resort.Longitude);
+        
+        if (isNaN(lat) || isNaN(lng)) {
+            console.warn(`Invalid coordinates for ${resort['Resort Name']}`);
+            return;
+        }
+        
+        // Calculate marker size based on total trails and zoom level
+        const totalTrails = parseFloat(resort['Total Trails']) || 0;
+        const zoom = map.getZoom();
+        const size = calculateMarkerSize(totalTrails, zoom);
+        
+        // Calculate marker color based on trails open percentage
+        const trailsOpenPct = parseFloat(resort['Trails Open %']) || 0;
+        const color = getColorForPercentage(trailsOpenPct, resort.Status);
+        
+        // Calculate stroke color based on status
+        const isOpen = resort.Status === 'Open';
+        const strokeColor = isOpen ? STROKE_COLORS.open : STROKE_COLORS.closed;
+        
+        // Create marker element with fixed positioning
+        const el = document.createElement('div');
+        el.className = 'custom-marker';
+        
+        // Convert hex color to rgba for opacity
+        const rgbaColor = hexToRgba(color, MARKER_OPACITY);
+        
+        el.style.width = `${size}px`;
+        el.style.height = `${size}px`;
+        el.style.borderRadius = '50%';
+        el.style.backgroundColor = rgbaColor;  // Use rgba for opacity
+        el.style.border = `2px solid ${strokeColor}`;
+        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+        el.style.cursor = 'pointer';
+        
+        // Store original size for hover effect
+        el.dataset.originalSize = size;
+        
+        // Create popup first (before event listeners reference it)
+        const popup = new mapboxgl.Popup({
+            offset: 25,
+            closeButton: true,
+            closeOnClick: false,
+            maxWidth: '320px'
+        }).setHTML(createPopupHTML(resort));
+        
+        // Track if popup is pinned (clicked)
+        let isPinned = false;
+        
+        // Hover effects - show popup on hover
+        el.addEventListener('mouseenter', () => {
+            const newSize = size * 1.2;
+            el.style.width = `${newSize}px`;
+            el.style.height = `${newSize}px`;
+            el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.5)';
+            
+            // Show popup on hover if not already pinned
+            if (!isPinned) {
+                popup.addTo(map);
+            }
+        });
+        
+        el.addEventListener('mouseleave', () => {
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+            el.style.boxShadow = '0 3px 12px rgba(0,0,0,0.4)';
+            
+            // Hide popup on mouse leave if not pinned
+            if (!isPinned) {
+                popup.remove();
+            }
+        });
+        
+        // Click to pin/unpin popup
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // Close all other popups and unpin them
+            markers.forEach(m => {
+                if (m !== marker) {
+                    m.getPopup().remove();
+                    const markerEl = m.getElement();
+                    markerEl._isPinned = false;
+                }
+            });
+            
+            // Toggle this popup's pinned state
+            isPinned = !isPinned;
+            el._isPinned = isPinned;
+            
+            if (isPinned) {
+                popup.addTo(map);
+            }
+        });
+        
+        // Create and add marker with anchor set to center
+        const marker = new mapboxgl.Marker({
+            element: el,
+            anchor: 'center'  // This prevents the diagonal movement!
+        })
+            .setLngLat([lng, lat])
+            .setPopup(popup)
+            .addTo(map);
+        
+        markers.push(marker);
+    });
+    
+    console.log(`Rendered ${markers.length} markers`);
+    
+    // On mobile, fit map to show all resort markers with padding
+    if (map._isMobile && markers.length > 0) {
+        const bounds = new mapboxgl.LngLatBounds();
+        
+        // Extend bounds to include all markers
+        filteredResorts.forEach(resort => {
+            const lat = parseFloat(resort.Latitude);
+            const lng = parseFloat(resort.Longitude);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                bounds.extend([lng, lat]);
+            }
+        });
+        
+        // Also include Denver metro (easternmost reference point)
+        bounds.extend([-104.9, 39.74]); // Denver coordinates
+        
+        // Fit to the resort bounds with generous padding
+        // MOBILE: ULTRA-MINIMAL top, HUGE bottom for legend
+        // DESKTOP: Uses MAP_CONFIG.padding (50px all sides) - see line 38-40
+        map.fitBounds(bounds, {
+            padding: {top: 25, bottom: 280, left: 10, right: 10},
+            duration: 1000
+        });
+    }
+}
+
+function calculateMarkerSize(totalTrails, zoom = null) {
+    // Size markers based on resort size (total trails)
+    // Use smaller sizes on mobile
+    const isMobile = window.innerWidth < 768;
+    let minSize = isMobile ? MARKER_SIZE.min * 0.75 : MARKER_SIZE.min;
+    let maxSize = isMobile ? MARKER_SIZE.max * 0.75 : MARKER_SIZE.max;
+    const minTrails = 7;  // Echo Mountain
+    const maxTrails = 277; // Vail
+    
+    // Scale markers up when zoomed in
+    if (zoom !== null) {
+        const zoomScale = Math.max(1, Math.min(2, (zoom - 6) / 3)); // Scale 1x at zoom 6, 2x at zoom 9+
+        minSize *= zoomScale;
+        maxSize *= zoomScale;
+    }
+    
+    if (totalTrails <= 0) return minSize;
+    
+    const normalized = (totalTrails - minTrails) / (maxTrails - minTrails);
+    const size = minSize + (normalized * (maxSize - minSize));
+    
+    return Math.max(minSize, Math.min(maxSize, size));
+}
+
+function updateMarkerSizes() {
+    // Update all marker sizes based on current zoom level
+    const zoom = map.getZoom();
+    
+    markers.forEach((marker, index) => {
+        const resort = resortData.filter(r => {
+            if (currentFilter === 'open') {
+                return r.Status && r.Status.toLowerCase() === 'open';
+            }
+            return true;
+        })[index];
+        
+        if (!resort) return;
+        
+        const totalTrails = parseFloat(resort['Total Trails']) || 0;
+        const newSize = calculateMarkerSize(totalTrails, zoom);
+        
+        const el = marker.getElement();
+        el.style.width = `${newSize}px`;
+        el.style.height = `${newSize}px`;
+    });
+}
+
+function hexToRgba(hex, alpha) {
+    // Convert hex color to rgba with opacity
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function formatTimestamp(timestamp) {
+    // Format "2025-11-16 11:46" to "Nov 16, 11:46am"
+    try {
+        const date = new Date(timestamp);
+        const month = date.toLocaleDateString('en-US', { month: 'short' });
+        const day = date.getDate();
+        const hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'pm' : 'am';
+        const displayHours = hours % 12 || 12;
+        
+        return `${month} ${day}, ${displayHours}:${minutes}${ampm}`;
+    } catch (e) {
+        return timestamp;
+    }
+}
+
+function getColorForPercentage(percent, status) {
+    // Cool-toned color scale: blue → pink-purple gradient
+    if (status === 'Closed' || percent === 0) {
+        return COLOR_SCALE.closed;  // Very light grey
+    } else if (percent < 10) {
+        return COLOR_SCALE.veryLow;  // Medium blue (1-10%)
+    } else if (percent < 35) {
+        return COLOR_SCALE.low;  // Lighter blue (10-35%)
+    } else if (percent < 75) {
+        return COLOR_SCALE.medium;  // Purple (35-75%)
+    } else {
+        return COLOR_SCALE.high;  // Pink-purple (75%+)
+    }
+}
+
+function createPopupHTML(resort) {
+    const status = resort.Status || 'Unknown';
+    const statusClass = status.toLowerCase();
+    
+    // Snow data
+    const snow24hRaw = resort['24h Snowfall (in)'] || '';
+    const snow48hRaw = resort['48h Snowfall (in)'] || '';
+    
+    const snow24h = snow24hRaw === '' ? '0' : snow24hRaw;
+    
+    // If the source only reports a 24h value and leaves 48h blank/zero,
+    // hide the 48h row instead of showing "0\"" which feels misleading.
+    const has24hSnow = snow24h !== '0';
+    const show48hSnow = snow48hRaw !== '' && !(has24hSnow && snow48hRaw === '0');
+    const snow48h = show48hSnow ? snow48hRaw : null;
+    const baseDepth = resort['Base Depth (in)'] || '0';
+    const midDepth = resort['Mid-Mtn Depth (in)'] || '0';
+    const surface = resort['Surface Conditions'] || 'N/A';
+    
+    // Terrain data
+    const openTrails = resort['Open Trails'] || '0';
+    const totalTrails = resort['Total Trails'] || '0';
+    const trailsPct = Math.round(parseFloat(resort['Trails Open %']) || 0);
+    const openLifts = resort['Open Lifts'] || '0';
+    const totalLifts = resort['Total Lifts'] || '0';
+    const liftsPct = Math.round(parseFloat(resort['Lifts Open %']) || 0);
+    
+    // Metadata
+    const source = resort['Data Source'] || '';
+    const updated = resort['Last Updated'] || '';
+    
+    // Clean resort name - remove "Ski Area" suffix
+    const resortName = (resort['Resort Name'] || '').replace(/\s+Ski Area$/i, '');
+    
+    return `
+        <div class="popup-header">${resortName}</div>
+        <div class="popup-status ${statusClass}">${status}</div>
+        
+        <div class="popup-section">
+            <div class="popup-label">Snow Conditions</div>
+            <div class="popup-data">
+                <span class="popup-data-label">24h Snowfall:</span>
+                <span class="popup-data-value">${snow24h}"</span>
+            </div>
+            ${snow48h !== null ? `
+            <div class="popup-data">
+                <span class="popup-data-label">48h Snowfall:</span>
+                <span class="popup-data-value">${snow48h}"</span>
+            </div>` : ''}
+            <div class="popup-data">
+                <span class="popup-data-label">Base Depth:</span>
+                <span class="popup-data-value">${baseDepth}"</span>
+            </div>
+            ${midDepth !== '0' ? `
+            <div class="popup-data">
+                <span class="popup-data-label">Mid-Mtn Depth:</span>
+                <span class="popup-data-value">${midDepth}"</span>
+            </div>` : ''}
+            ${surface !== 'N/A' && surface !== '' ? `
+            <div class="popup-data">
+                <span class="popup-data-label">Surface:</span>
+                <span class="popup-data-value">${surface}</span>
+            </div>` : ''}
+        </div>
+        
+        <div class="popup-section">
+            <div class="popup-label">Terrain</div>
+            <div class="popup-data">
+                <span class="popup-data-label">Trails:</span>
+                <span class="popup-data-value">${openTrails}/${totalTrails} (${trailsPct}%)</span>
+            </div>
+            <div class="popup-data">
+                <span class="popup-data-label">Lifts:</span>
+                <span class="popup-data-value">${openLifts}/${totalLifts} (${liftsPct}%)</span>
+            </div>
+        </div>
+        
+        <div class="popup-footer">
+            ${updated ? `${formatTimestamp(updated)}<br>` : ''}
+            ${source}
+        </div>
+    `;
+}
+
+// Handle errors
+window.addEventListener('error', (event) => {
+    console.error('JavaScript error:', event.error);
+});
+

@@ -1,0 +1,96 @@
+name: Update California Snow Conditions
+
+on:
+  # Run every 2 hours from 4am-10pm Pacific Time
+  # Times are in UTC (Pacific Time is UTC-8 during winter, so add 8 hours)
+  schedule:
+    - cron: '0 12,14,16,18,20,22,0,2,4,6 * * *'  # 4am, 6am, 8am, 10am, 12pm, 2pm, 4pm, 6pm, 8pm, 10pm PT
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  update-snow-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15  # Prevent hanging workflows
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Install Chrome and ChromeDriver
+      run: |
+        # Install Chrome
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+        sudo sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+        # ChromeDriver is automatically managed by Selenium 4.x
+        # No manual installation needed!
+    
+    - name: Verify environment variables
+      run: |
+        echo "Checking environment setup..."
+        if [ -z "$GOOGLE_SHEETS_SPREADSHEET_ID" ]; then
+          echo "❌ ERROR: GOOGLE_SHEETS_SPREADSHEET_ID is not set!"
+          exit 1
+        else
+          echo "✅ GOOGLE_SHEETS_SPREADSHEET_ID is set"
+        fi
+        
+        if [ -z "$GOOGLE_CREDENTIALS" ]; then
+          echo "❌ ERROR: GOOGLE_CREDENTIALS is not set!"
+          exit 1
+        else
+          echo "✅ GOOGLE_CREDENTIALS is set (${#GOOGLE_CREDENTIALS} characters)"
+        fi
+      env:
+        GOOGLE_SHEETS_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SPREADSHEET_ID }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+    
+    - name: Scrape data and update Google Sheets
+      env:
+        GOOGLE_SHEETS_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SPREADSHEET_ID }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+      run: |
+        echo "Running combined scraper and Google Sheets update..."
+        python run_all_updates.py
+        
+        # Show the last 50 lines of the log if it exists
+        if [ -f master_update.log ]; then
+          echo ""
+          echo "=== Last 50 lines of master_update.log ==="
+          tail -50 master_update.log
+        fi
+    
+    - name: Upload logs and debug files as artifacts
+      if: always()  # Run even if previous step fails
+      uses: actions/upload-artifact@v4
+      with:
+        name: update-logs-${{ github.run_number }}
+        path: |
+          *.log
+          *.csv
+          *_rendered.html
+        retention-days: 30
+        if-no-files-found: warn
+    
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ Snow conditions update failed!"
+        echo "Check the logs artifact for details"
+        exit 1
+
