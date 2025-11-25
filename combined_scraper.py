@@ -111,7 +111,11 @@ def add_missing_major_resorts(df):
     """Add major resorts that aren't scraped yet but should appear on the map"""
     
     # Major resorts to always include (even if closed/not scraped)
-    must_include = ['Palisades Tahoe', 'Mammoth Mountain', 'Heavenly', 'Northstar California']
+    must_include = [
+        'Palisades Tahoe', 'Mammoth Mountain', 'Heavenly', 'Northstar California',
+        'Kirkwood', 'Sugar Bowl', 'Sierra-at-Tahoe', 'Alpine Meadows',
+        'Homewood', 'June Mountain'
+    ]
     
     existing_names = df['name'].str.lower().tolist()
     
