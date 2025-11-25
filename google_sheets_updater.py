@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Google Sheets Updater
-Uploads Colorado resort data to Google Sheets for Datawrapper integration
+Uploads California resort data to Google Sheets for Datawrapper integration
 """
 
 import os
@@ -38,7 +38,7 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 
 class GoogleSheetsUpdater:
-    """Handles updating Google Sheets with Colorado resort data"""
+    """Handles updating Google Sheets with California resort data"""
     
     def __init__(self, spreadsheet_id=None, credentials_json=None):
         self.spreadsheet_id = spreadsheet_id or SPREADSHEET_ID
@@ -263,7 +263,7 @@ class GoogleSheetsUpdater:
 def main():
     """Main execution"""
     logger.info("="*70)
-    logger.info("GOOGLE SHEETS UPDATER - Colorado Snow Conditions")
+    logger.info("GOOGLE SHEETS UPDATER - California Snow Conditions")
     logger.info("="*70)
     
     try:
@@ -274,7 +274,7 @@ def main():
         updater.authenticate()
         
         # Read data from combined scraper output
-        csv_file = 'colorado_resorts_combined.csv'
+        csv_file = 'california_resorts_combined.csv'
         if not os.path.exists(csv_file):
             logger.error(f"❌ CSV file not found: {csv_file}")
             logger.info("Run combined_scraper.py first to generate the data")
