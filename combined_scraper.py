@@ -15,6 +15,7 @@ from onthesnow_scraper import OnTheSnowScraper
 RESORT_DATA = {
     'Alpine Meadows': {'lat': 39.1666, 'lng': -120.2242, 'total_trails': 100, 'total_lifts': 13, 'region': 'Tahoe North'},
     'Bear Mountain': {'lat': 34.2311, 'lng': -116.9097, 'total_trails': 27, 'total_lifts': 11, 'region': 'Southern California'},
+    'Mt. Baldy': {'lat': 34.2569, 'lng': -117.6467, 'total_trails': 26, 'total_lifts': 4, 'region': 'Southern California'},
     'Bear Valley': {'lat': 38.4933, 'lng': -120.0086, 'total_trails': 67, 'total_lifts': 9, 'region': 'Northern California'},
     'Boreal Mountain': {'lat': 39.3309, 'lng': -120.3500, 'total_trails': 33, 'total_lifts': 9, 'region': 'Tahoe North'},
     'China Peak': {'lat': 37.3036, 'lng': -119.1883, 'total_trails': 45, 'total_lifts': 11, 'region': 'Central California'},
@@ -111,10 +112,21 @@ def add_missing_major_resorts(df):
     """Add major resorts that aren't scraped yet but should appear on the map"""
     
     # Major resorts to always include (even if closed/not scraped)
+    # Include all California resorts so they appear on map year-round
     must_include = [
-        'Palisades Tahoe', 'Mammoth Mountain', 'Heavenly', 'Northstar California',
-        'Kirkwood', 'Sugar Bowl', 'Sierra-at-Tahoe', 'Alpine Meadows',
-        'Homewood', 'June Mountain'
+        # Lake Tahoe - North
+        'Palisades Tahoe', 'Northstar California', 'Sugar Bowl', 'Alpine Meadows',
+        'Homewood', 'Diamond Peak', 'Boreal Mountain', 'Soda Springs',
+        'Tahoe Donner', 'Donner Ski Ranch',
+        # Lake Tahoe - South
+        'Heavenly', 'Kirkwood', 'Sierra-at-Tahoe',
+        # Mammoth
+        'Mammoth Mountain', 'June Mountain',
+        # Southern California
+        'Bear Mountain', 'Snow Summit', 'Mountain High East', 
+        'Mountain High North', 'Mountain High West', 'Snow Valley',
+        # Other California
+        'Bear Valley', 'China Peak', 'Dodge Ridge', 'Mt. Shasta'
     ]
     
     existing_names = df['name'].str.lower().tolist()
