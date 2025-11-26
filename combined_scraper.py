@@ -8,7 +8,7 @@ Adds coordinates from known resort locations
 import pandas as pd
 import logging
 from datetime import datetime
-from onthesnow_scraper import OnTheSnowScraper
+from onthesnow_json_scraper import OnTheSnowJSONScraper
 
 # California resort coordinates and trail counts
 # Data compiled from resort websites and OnTheSnow
@@ -196,10 +196,10 @@ def combine_resort_data():
     
     all_resorts = []
     
-    # 1. Get OnTheSnow data (primary source)
+    # 1. Get OnTheSnow data (primary source) - using JSON parser for complete data
     logger.info("\n📊 Step 1: Scraping OnTheSnow (primary source)...")
     try:
-        ots_scraper = OnTheSnowScraper(headless=True)
+        ots_scraper = OnTheSnowJSONScraper(headless=True)
         ots_df = ots_scraper.scrape()
         
         if not ots_df.empty:
