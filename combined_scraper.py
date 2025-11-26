@@ -27,9 +27,7 @@ RESORT_DATA = {
     'June Mountain': {'lat': 37.7764, 'lng': -119.0778, 'total_trails': 35, 'total_lifts': 7, 'region': 'Mammoth'},
     'Kirkwood': {'lat': 38.6853, 'lng': -120.0658, 'total_trails': 86, 'total_lifts': 15, 'region': 'Tahoe South'},
     'Mammoth Mountain': {'lat': 37.6308, 'lng': -119.0325, 'total_trails': 175, 'total_lifts': 28, 'region': 'Mammoth'},
-    'Mountain High East': {'lat': 34.3803, 'lng': -117.6856, 'total_trails': 25, 'total_lifts': 6, 'region': 'Southern California'},
-    'Mountain High North': {'lat': 34.4243, 'lng': -117.6784, 'total_trails': 24, 'total_lifts': 5, 'region': 'Southern California'},
-    'Mountain High West': {'lat': 34.4184, 'lng': -117.7025, 'total_trails': 21, 'total_lifts': 5, 'region': 'Southern California'},
+    'Mountain High': {'lat': 34.3803, 'lng': -117.6856, 'total_trails': 59, 'total_lifts': 14, 'region': 'Southern California'},
     'Mt. Shasta': {'lat': 41.3592, 'lng': -122.2097, 'total_trails': 32, 'total_lifts': 3, 'region': 'Northern California'},
     'Northstar California': {'lat': 39.2735, 'lng': -120.1211, 'total_trails': 100, 'total_lifts': 20, 'region': 'Tahoe North'},
     'Palisades Tahoe': {'lat': 39.1969, 'lng': -120.2356, 'total_trails': 200, 'total_lifts': 30, 'region': 'Tahoe North'},
@@ -122,9 +120,8 @@ def add_missing_major_resorts(df):
         'Heavenly', 'Kirkwood', 'Sierra-at-Tahoe',
         # Mammoth
         'Mammoth Mountain', 'June Mountain',
-        # Southern California
-        'Bear Mountain', 'Snow Summit', 'Mountain High East', 
-        'Mountain High North', 'Mountain High West', 'Snow Valley',
+        # Southern California (Note: Mountain High combines East/West/North into one report)
+        'Bear Mountain', 'Snow Summit', 'Snow Valley',
         # Other California
         'Bear Valley', 'China Peak', 'Dodge Ridge', 'Mt. Shasta'
     ]
