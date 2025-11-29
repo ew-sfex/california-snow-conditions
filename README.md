@@ -79,13 +79,3 @@ python combined_scraper.py    # Scrape data
 python google_sheets_updater.py  # Upload to sheets
 open docs/index.html           # View map locally
 ```
-
----
-
-## License
-
-Open source - feel free to fork and adapt for other regions!
-
----
-
-**Built with ❄️ by Evan Wyloge**
