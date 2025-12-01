@@ -13,10 +13,10 @@ const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPDR89F-3N-HK
 
 // Map configuration
 const MAP_CONFIG = {
-    // California ski resort bounds (Sierra Nevada + SoCal mountains)
+    // California ski resort bounds (calculated from actual resort locations)
     bounds: [
-        [-120.6, 33.9],  // Southwest (just south/west of SoCal resorts)
-        [-116.7, 41.8]   // Northeast (just north/east of Mt. Shasta)
+        [-122.7, 33.7],  // Southwest (covers all resorts + buffer)
+        [-116.4, 41.9]   // Northeast (covers all resorts + buffer)
     ],
     padding: {
         top: 50,
