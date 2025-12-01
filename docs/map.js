@@ -62,13 +62,11 @@ function initMap() {
         pitch: 0
     });
     
-    // On desktop: fit to California bounds
-    // On mobile: will fit to resort data after loading (see renderMarkers)
-    if (!isMobile) {
-        map.fitBounds(MAP_CONFIG.bounds, {
-            padding: MAP_CONFIG.padding
-        });
-    }
+    // Fit to California bounds on initial load (both desktop and mobile)
+    // On mobile: will re-fit to actual resort markers after loading (see renderMarkers)
+    map.fitBounds(MAP_CONFIG.bounds, {
+        padding: isMobile ? {top: 20, bottom: 20, left: 20, right: 20} : MAP_CONFIG.padding
+    });
     
     // Add navigation controls
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
