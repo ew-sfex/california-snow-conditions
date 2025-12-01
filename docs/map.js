@@ -64,6 +64,9 @@ function initMap() {
     
     // Fit to California bounds on initial load (both desktop and mobile)
     // On mobile: will re-fit to actual resort markers after loading (see renderMarkers)
+    console.log('MAP_CONFIG.bounds:', MAP_CONFIG.bounds);
+    console.log('REGIONS.all.bounds:', REGIONS.all.bounds);
+    console.log('Using MAP_CONFIG.bounds for initial view');
     map.fitBounds(MAP_CONFIG.bounds, {
         padding: isMobile ? {top: 20, bottom: 20, left: 20, right: 20} : MAP_CONFIG.padding
     });
