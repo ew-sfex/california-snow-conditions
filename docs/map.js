@@ -352,9 +352,6 @@ function renderMarkers() {
             }
         });
         
-        // Also include Denver metro (easternmost reference point)
-        bounds.extend([-104.9, 39.74]); // Denver coordinates
-        
         // Fit to the resort bounds with generous padding
         // MOBILE: ULTRA-MINIMAL top, HUGE bottom for legend
         // DESKTOP: Uses MAP_CONFIG.padding (50px all sides) - see line 38-40
