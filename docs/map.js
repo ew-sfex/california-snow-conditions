@@ -8,7 +8,7 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 const REGIONS = {
     'all': {
         name: 'All California',
-        bounds: [[-124.5, 32.5], [-114.0, 42.0]],
+        bounds: [[-122.7, 33.7], [-116.4, 41.9]],
         padding: {top: 50, bottom: 50, left: 50, right: 50}
     },
     'tahoe-north': {
