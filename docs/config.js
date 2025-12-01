@@ -13,10 +13,10 @@ const DATA_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQPDR89F-3N-HK
 
 // Map configuration
 const MAP_CONFIG = {
-    // California bounds (southwest and northeast corners)
+    // California ski resort bounds (focused on Sierra Nevada range)
     bounds: [
-        [-124.5, 32.5],  // Southwest corner of California (San Diego area)
-        [-114.0, 42.0]   // Northeast corner of California (Oregon border)
+        [-122.5, 33.8],  // Southwest (covers SoCal resorts)
+        [-118.5, 42.0]   // Northeast (covers Tahoe to Mt. Shasta)
     ],
     padding: {
         top: 50,
